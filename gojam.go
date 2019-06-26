@@ -15,18 +15,18 @@ const (
 )
 
 type Markov struct {
-	n         int    //the 'n' in n-gram, how long
-	separator string //what separates each gram - for words, usually spaces.
-	chain     map[string]Output
+	n         int               //the 'n' in n-gram, how long
+	separator string            //what separates each gram - for words, usually spaces.
+	Chain     map[string]Output `json:"_chain"`
 }
 
 type Output struct {
-	occurrences int            //how many times the 'input' occurs. ie total of all output possibilities = 100%
-	grams       map[string]int //how many times the word appears AFTER the input
+	Occurrences int            `json:"o"`     //how many times the 'input' occurs. ie total of all output possibilities = 100%
+	Grams       map[string]int `json:"grams"` //how many times the word appears AFTER the input
 }
 
 func (self *Output) increment() {
-	self.occurrences++
+	self.Occurrences++
 }
 
 func NewMarkov(grams int, separator string) *Markov {
@@ -45,14 +45,14 @@ func (m Markov) TrainOnExample(sentence string) { //for single example
 	for i := range words {
 		st := words[i]
 		prefix := strings.Join(queue, " ")
-		opt, exists := m.chain[prefix]
+		opt, exists := m.Chain[prefix]
 		if !exists {
-			m.chain[prefix] = Output{0, make(map[string]int)}
-			opt = m.chain[prefix]
+			m.Chain[prefix] = Output{0, make(map[string]int)}
+			opt = m.Chain[prefix]
 		}
-		opt.grams[st] += 1
+		opt.Grams[st] += 1
 		opt.increment()
-		m.chain[prefix] = opt
+		m.Chain[prefix] = opt
 		//dequeue first element and shift everything
 		queue[0] = "" //I've heard this helps with memory
 		queue = queue[1:]
@@ -71,10 +71,10 @@ func (m Markov) GenerateExample() string {
 		queue[0] = ""
 		queue = queue[1:]
 		queue = append(queue, generated)
-		outputs := m.chain[strings.Join(queue, " ")]
-		num := rand.Intn(outputs.occurrences)
+		outputs := m.Chain[strings.Join(queue, " ")]
+		num := rand.Intn(outputs.Occurrences)
 		tally := 0
-		for k, v := range outputs.grams {
+		for k, v := range outputs.Grams {
 			tally += v
 			if tally > num {
 				sentence = append(sentence, k)
@@ -87,12 +87,16 @@ func (m Markov) GenerateExample() string {
 	return strings.Join(sentence, " ")
 }
 
-func (m Markov) ToJSON() {
-	jsonString, _ := json.Marshal(m.chain["I"])
-	fmt.Println(string(jsonString))
+func (m Markov) ToJSON() []byte {
+	jsonString, _ := json.Marshal(m.Chain)
+	return jsonString
+}
+
+func (m Markov) FromJSON(data []byte) error {
+	err := json.Unmarshal(data, &m.Chain)
+	return err
 }
 
 func (m Markov) PrintMap() {
-	fmt.Println(m.chain)
-	fmt.Println(m.chain["I"])
+	fmt.Println(m.Chain)
 }
