@@ -29,11 +29,12 @@ func NewMarkov(grams int, separator string) *Markov {
 
 func (m Markov) TrainOnExample(sentence string) { //for single example
 	queue := []string{}
-	for i := range queue {
-		queue[i] = ""
+	for i := 0; i < m.n; i++ {
+		queue = append(queue, "")
 	}
 	queue[len(queue)-1] = "_START_"
 	words := strings.Fields(sentence)
+	words = append(words, "_END_")
 	for i := range words {
 		st := words[i]
 		prefix := strings.Join(queue, " ")
@@ -43,6 +44,7 @@ func (m Markov) TrainOnExample(sentence string) { //for single example
 			opt = m.chain[prefix]
 		}
 		opt.grams[st] += 1
+		opt.occurrences += 1
 		//dequeue first element and shift everything
 		queue[0] = "" //I've heard this helps with memory
 		queue = queue[1:]
@@ -52,4 +54,5 @@ func (m Markov) TrainOnExample(sentence string) { //for single example
 
 func (m Markov) PrintMap() {
 	fmt.Println(m.chain)
+	fmt.Println(m.chain["I"])
 }
