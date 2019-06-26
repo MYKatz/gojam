@@ -1,6 +1,7 @@
 package gojam
 
 import (
+	"encoding/json"
 	"fmt"
 	"strings"
 
@@ -16,7 +17,7 @@ const (
 type Markov struct {
 	n         int    //the 'n' in n-gram, how long
 	separator string //what separates each gram - for words, usually spaces.
-	chain     map[string]*Output
+	chain     map[string]Output
 }
 
 type Output struct {
@@ -24,8 +25,12 @@ type Output struct {
 	grams       map[string]int //how many times the word appears AFTER the input
 }
 
+func (self *Output) increment() {
+	self.occurrences++
+}
+
 func NewMarkov(grams int, separator string) *Markov {
-	m := Markov{grams, separator, make(map[string]*Output)}
+	m := Markov{grams, separator, make(map[string]Output)}
 	return &m
 }
 
@@ -40,13 +45,14 @@ func (m Markov) TrainOnExample(sentence string) { //for single example
 	for i := range words {
 		st := words[i]
 		prefix := strings.Join(queue, " ")
-		opt := m.chain[prefix]
-		if opt == nil {
-			m.chain[prefix] = &Output{0, make(map[string]int)}
+		opt, exists := m.chain[prefix]
+		if !exists {
+			m.chain[prefix] = Output{0, make(map[string]int)}
 			opt = m.chain[prefix]
 		}
 		opt.grams[st] += 1
-		opt.occurrences += 1
+		opt.increment()
+		m.chain[prefix] = opt
 		//dequeue first element and shift everything
 		queue[0] = "" //I've heard this helps with memory
 		queue = queue[1:]
@@ -79,6 +85,11 @@ func (m Markov) GenerateExample() string {
 	}
 	sentence[len(sentence)-1] = ""
 	return strings.Join(sentence, " ")
+}
+
+func (m Markov) ToJSON() {
+	jsonString, _ := json.Marshal(m.chain["I"])
+	fmt.Println(string(jsonString))
 }
 
 func (m Markov) PrintMap() {

@@ -17,4 +17,5 @@ func TestTraining(t *testing.T) {
 	mark.PrintMap()
 	s := mark.GenerateExample()
 	fmt.Println(s)
+	mark.ToJSON()
 }
