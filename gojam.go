@@ -3,6 +3,8 @@ package gojam
 import (
 	"fmt"
 	"strings"
+
+	"math/rand"
 )
 
 //These signal the start and end of a sentence.
@@ -50,6 +52,33 @@ func (m Markov) TrainOnExample(sentence string) { //for single example
 		queue = queue[1:]
 		queue = append(queue, st)
 	}
+}
+
+func (m Markov) GenerateExample() string {
+	queue := []string{}
+	for i := 0; i < m.n; i++ {
+		queue = append(queue, "")
+	}
+	generated := "_START_"
+	sentence := []string{}
+	for generated != "_END_" {
+		queue[0] = ""
+		queue = queue[1:]
+		queue = append(queue, generated)
+		outputs := m.chain[strings.Join(queue, " ")]
+		num := rand.Intn(outputs.occurrences)
+		tally := 0
+		for k, v := range outputs.grams {
+			tally += v
+			if tally > num {
+				sentence = append(sentence, k)
+				generated = k
+				break
+			}
+		}
+	}
+	sentence[len(sentence)-1] = ""
+	return strings.Join(sentence, " ")
 }
 
 func (m Markov) PrintMap() {
