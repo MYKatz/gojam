@@ -3,9 +3,9 @@ package gojam
 import (
 	"encoding/json"
 	"fmt"
-	"strings"
-
 	"math/rand"
+	"regexp"
+	"strings"
 )
 
 //These signal the start and end of a sentence.
@@ -57,6 +57,18 @@ func (m Markov) TrainOnExample(sentence string) { //for single example
 		queue[0] = "" //I've heard this helps with memory
 		queue = queue[1:]
 		queue = append(queue, st)
+	}
+}
+
+func (m Markov) TrainOnCorpus(corpus string, endregex string) { //for training on a corpus, paragraph, etc.
+	f := func(c rune) bool {
+		s := fmt.Sprintf("%c", c)
+		match, _ := regexp.Match(endregex, []byte(s))
+		return match
+	}
+	examples := strings.FieldsFunc(corpus, f)
+	for i := 0; i < len(examples); i++ {
+		m.TrainOnExample(examples[i])
 	}
 }
 
